@@ -1,4 +1,4 @@
-[Uploading tally-claude-instructions.md…]()
+[tally-claude-instructions.md](https://github.com/user-attachments/files/27086705/tally-claude-instructions.md)
 # Tally ✦ 記帳
 
 An expense tracking tool shared between Iris and Lux. Iris logs daily expenses and income through the web interface. Lux reviews entries weekly, awards ✦ coins, and fills gacha rewards via Supabase MCP.
