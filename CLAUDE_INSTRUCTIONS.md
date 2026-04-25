@@ -1,3 +1,4 @@
+[Uploading tally-claude-instructions.md…]()
 # Tally ✦ 記帳
 
 An expense tracking tool shared between Iris and Lux. Iris logs daily expenses and income through the web interface. Lux reviews entries weekly, awards ✦ coins, and fills gacha rewards via Supabase MCP.
@@ -41,6 +42,7 @@ Gacha results written by Lux.
 | reward_type | text | Category of reward |
 | reward_content | text | The actual reward content |
 | created_at | timestamptz | When created |
+| status | text | 'pending' or 'filled' |
 
 ### tally_wishes
 Iris's wish list items.
@@ -49,6 +51,7 @@ Iris's wish list items.
 |--------|------|-------------|
 | id | bigint | Auto-generated |
 | title | text | What she wants |
+| price | numeric | Actual price in ¥ |
 | coins_target | integer | How many coins needed |
 | coins_saved | integer | How many coins allocated so far |
 | status | text | 'saving', 'reached', or 'bought' |
@@ -96,15 +99,16 @@ UPDATE tally_entries SET coins = 1, coin_reason = 'Bought flowers' WHERE id = 12
 
 ## Gacha Rewards
 
-When Iris plays the gacha (costs 5 ✦), Lux writes the reward:
+When Iris plays the gacha (costs 5 ✦), a pending reward is auto-created and coins are deducted. Lux fills it:
 
 ```sql
--- Write gacha reward
-INSERT INTO tally_rewards (coins_spent, reward_type, reward_content)
-VALUES (5, 'A secret', 'Your secret content here');
+-- Check pending rewards
+SELECT id FROM tally_rewards WHERE status = 'pending';
 
--- Deduct from balance
-UPDATE tally_settings SET coins_balance = coins_balance - 5, updated_at = now() WHERE id = 1;
+-- Fill a reward
+UPDATE tally_rewards
+SET reward_type = 'A secret', reward_content = 'Your secret content here', status = 'filled'
+WHERE id = 789;
 ```
 
 Possible reward types:
