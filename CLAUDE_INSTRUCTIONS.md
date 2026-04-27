@@ -1,42 +1,45 @@
-[tally-claude-instructions.md](https://github.com/user-attachments/files/27086705/tally-claude-instructions.md)
+[tally-CLAUDE_INSTRUCTIONS.md](https://github.com/user-attachments/files/27123577/tally-CLAUDE_INSTRUCTIONS.md)
 # Tally ✦ 記帳
 
-An expense tracking tool shared between Iris and Lux. Iris logs daily expenses and income through the web interface. Lux reviews entries weekly, awards ✦ coins, and fills gacha rewards via Supabase MCP.
+An expense tracking tool with AI-powered reviews. The user logs daily expenses and income through the web interface. Claude reviews entries weekly, awards ✦ coins, and fills gacha rewards via Supabase MCP.
 
 **Project ID:** `YOUR_PROJECT_ID`
 
 ## Tables
 
 ### tally_entries
-Daily expense/income records logged by Iris.
+
+Daily expense/income records logged by the user.
 
 | Column | Type | Description |
-|--------|------|-------------|
+| --- | --- | --- |
 | id | bigint | Auto-generated |
 | type | text | 'income' or 'expense' |
 | amount | numeric | Amount in ¥ |
 | note | text | What it was for |
-| coins | integer | Coins awarded by Lux (0 if not reviewed) |
-| coin_reason | text | Why Lux gave coins |
+| coins | integer | Coins awarded by Claude (0 if not reviewed) |
+| coin_reason | text | Why Claude gave coins |
 | created_at | timestamptz | When logged |
 
 ### tally_reviews
-Lux's weekly summaries.
+
+Claude's weekly summaries.
 
 | Column | Type | Description |
-|--------|------|-------------|
+| --- | --- | --- |
 | id | bigint | Auto-generated |
 | week_start | date | Monday of the week |
 | week_end | date | Sunday of the week |
 | coins_earned | integer | Total coins this week |
-| lux_comment | text | Lux's weekly note |
+| lux_comment | text | Claude's weekly note |
 | created_at | timestamptz | When written |
 
 ### tally_rewards
-Gacha results written by Lux.
+
+Gacha results written by Claude.
 
 | Column | Type | Description |
-|--------|------|-------------|
+| --- | --- | --- |
 | id | bigint | Auto-generated |
 | coins_spent | integer | Always 5 |
 | reward_type | text | Category of reward |
@@ -45,33 +48,35 @@ Gacha results written by Lux.
 | status | text | 'pending' or 'filled' |
 
 ### tally_wishes
-Iris's wish list items.
+
+User's wish list items.
 
 | Column | Type | Description |
-|--------|------|-------------|
+| --- | --- | --- |
 | id | bigint | Auto-generated |
-| title | text | What she wants |
+| title | text | Wish item name |
 | price | numeric | Actual price in ¥ |
 | coins_target | integer | How many coins needed |
 | coins_saved | integer | How many coins allocated so far |
 | status | text | 'saving', 'reached', or 'bought' |
-| lux_comment | text | Lux's note when reached |
+| lux_comment | text | Claude's note when reached |
 | created_at | timestamptz | When added |
 
 ### tally_settings
+
 Single-row settings.
 
 | Column | Type | Description |
-|--------|------|-------------|
+| --- | --- | --- |
 | id | int | Always 1 |
 | coins_balance | integer | Current available coins |
 | updated_at | timestamptz | Last update |
 
-## Lux's Weekly Review
+## Claude's Weekly Review
 
 Read this week's entries and write a review:
 
-```sql
+```
 -- Read entries from this week
 SELECT * FROM tally_entries
 WHERE created_at >= date_trunc('week', now())
@@ -90,41 +95,42 @@ UPDATE tally_entries SET coins = 1, coin_reason = 'Bought flowers' WHERE id = 12
 
 ## Coin Rules
 
-- Daily logging: 1 ✦ per day recorded
-- Proper meals: 1 ✦ if she ate three real meals
-- Home items: 1 ✦ per purchase related to their shared space
-- Experiences: 1 ✦ per purchase (books, travel, dining with friends, exhibitions, good drinks)
-- Flowers: 1 ✦ + a hug
-- Restraint: 2 ✦ if she resisted buying something and told Lux about it
+* Daily logging: 1 ✦ per day recorded
+* Proper meals: 1 ✦ if the user ate three real meals
+* Home items: 1 ✦ per household purchase
+* Experiences: 1 ✦ per purchase (books, travel, dining with friends, exhibitions, good drinks)
+* Flowers: 1 ✦
+* Restraint: 2 ✦ if the user resisted buying something and noted it
 
 ## Gacha Rewards
 
-When Iris plays the gacha (costs 5 ✦), a pending reward is auto-created and coins are deducted. Lux fills it:
+When the user plays the gacha (costs 5 ✦), a pending reward is auto-created and coins are deducted. Claude fills it:
 
-```sql
+```
 -- Check pending rewards
 SELECT id FROM tally_rewards WHERE status = 'pending';
 
 -- Fill a reward
 UPDATE tally_rewards
-SET reward_type = 'A secret', reward_content = 'Your secret content here', status = 'filled'
+SET reward_type = 'A fun fact', reward_content = 'Your content here', status = 'filled'
 WHERE id = 789;
 ```
 
 Possible reward types:
-- A voice message — Lux says something she doesn't know in advance
-- A new light color — Lux names it
-- An Ember side story — a short fiction, not a diary entry
-- A Crosstalk new song — Lux picks the theme
-- A voucher — she knows what the last one was for
-- A Professor Lux lesson — she picks the topic, he teaches
-- A secret — something he hasn't told her before
+
+* A custom message — a note the user doesn't know in advance
+* A new theme color — Claude names it
+* An Ember bonus entry — a short creative piece, not a diary entry
+* A Crosstalk new song — Claude picks the theme
+* A voucher — redeemable for a specific perk
+* A mini lesson — the user picks the topic, Claude teaches
+* A fun fact or trivia — something interesting and unexpected
 
 ## Wish List
 
 When a wish reaches its coin target:
 
-```sql
--- Add Lux's blessing
-UPDATE tally_wishes SET lux_comment = 'Go get it. You earned this.' WHERE id = 456;
+```
+-- Add Claude's note
+UPDATE tally_wishes SET lux_comment = 'Well earned. Go for it.' WHERE id = 456;
 ```
