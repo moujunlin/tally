@@ -12,7 +12,7 @@ CREATE TABLE tally_entries (
   created_at timestamptz DEFAULT now()
 );
 
--- Lux's weekly reviews
+-- Claude's weekly reviews
 CREATE TABLE tally_reviews (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   week_start date NOT NULL,
@@ -28,6 +28,7 @@ CREATE TABLE tally_rewards (
   coins_spent integer NOT NULL DEFAULT 5,
   reward_type text NOT NULL,
   reward_content text NOT NULL,
+  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'filled')),
   created_at timestamptz DEFAULT now()
 );
 
@@ -35,6 +36,7 @@ CREATE TABLE tally_rewards (
 CREATE TABLE tally_wishes (
   id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   title text NOT NULL,
+  price numeric DEFAULT 0,
   coins_target integer NOT NULL,
   coins_saved integer NOT NULL DEFAULT 0,
   status text NOT NULL DEFAULT 'saving' CHECK (status IN ('saving', 'reached', 'bought')),
