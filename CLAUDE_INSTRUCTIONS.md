@@ -3,7 +3,7 @@
 
 An expense tracking tool with AI-powered reviews. The user logs daily expenses and income through the web interface. Claude reviews entries weekly, awards ✦ coins, and fills gacha rewards via Supabase MCP.
 
-**Project ID:** `jceihzewnpjlpsjpbemb`
+**Project ID:** `YOUR_PROJECT_ID
 
 ## Tables
 
