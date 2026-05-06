@@ -18,7 +18,7 @@ CREATE TABLE tally_reviews (
   week_start date NOT NULL,
   week_end date NOT NULL,
   coins_earned integer NOT NULL DEFAULT 0,
-  lux_comment text DEFAULT '',
+  lori_comment text DEFAULT '',
   created_at timestamptz DEFAULT now()
 );
 
@@ -40,7 +40,7 @@ CREATE TABLE tally_wishes (
   coins_target integer NOT NULL,
   coins_saved integer NOT NULL DEFAULT 0,
   status text NOT NULL DEFAULT 'saving' CHECK (status IN ('saving', 'reached', 'bought')),
-  lux_comment text DEFAULT '',
+  lori_comment text DEFAULT '',
   created_at timestamptz DEFAULT now()
 );
 
@@ -65,3 +65,38 @@ CREATE POLICY "public_all" ON tally_reviews FOR ALL USING (true) WITH CHECK (tru
 CREATE POLICY "public_all" ON tally_rewards FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "public_all" ON tally_wishes FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "public_all" ON tally_settings FOR ALL USING (true) WITH CHECK (true);
+
+-- Checklist items (configurable)
+CREATE TABLE tally_checklist_items (
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  name text NOT NULL,
+  category text NOT NULL,
+  sort_order integer NOT NULL DEFAULT 0,
+  coin_rule jsonb DEFAULT NULL,
+  active boolean DEFAULT true,
+  created_at timestamptz DEFAULT now()
+);
+
+-- Checklist daily logs
+CREATE TABLE tally_checklist_logs (
+  id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  item_id bigint NOT NULL REFERENCES tally_checklist_items(id),
+  check_date date NOT NULL,
+  checked boolean DEFAULT false,
+  comment text DEFAULT '',
+  created_at timestamptz DEFAULT now(),
+  UNIQUE(item_id, check_date)
+);
+
+INSERT INTO tally_checklist_items (name, category, sort_order, coin_rule) VALUES
+  ('早餐', 'meal', 1, '{"type": "all_in_category", "coins": 1}'),
+  ('午餐', 'meal', 2, '{"type": "all_in_category", "coins": 1}'),
+  ('晚餐', 'meal', 3, '{"type": "all_in_category", "coins": 1}'),
+  ('草酸艾司西酞普兰', 'medication', 4, '{"type": "all_in_category", "coins": 1}'),
+  ('阿立哌唑', 'medication', 5, '{"type": "all_in_category", "coins": 1}'),
+  ('运动', 'exercise', 6, '{"type": "per_check", "coins": 1}');
+
+ALTER TABLE tally_checklist_items ENABLE ROW LEVEL SECURITY;
+ALTER TABLE tally_checklist_logs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "public_all" ON tally_checklist_items FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "public_all" ON tally_checklist_logs FOR ALL USING (true) WITH CHECK (true);
