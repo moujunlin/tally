@@ -175,6 +175,19 @@ body::before{
   font-size:11px;color:#a89070;text-align:center;
   padding:12px;border:2px dashed #c9b88a;margin:12px 0;
 }
+
+/* ---- Review ---- */
+.review-page{padding-bottom:80px}
+.review-header{text-align:center;margin-bottom:20px}
+.review-icon{font-size:28px;color:#b8960c}
+.review-title{font-size:14px;letter-spacing:4px;color:#b8960c;margin:8px 0 4px}
+.review-date{font-size:10px;color:#a89070;letter-spacing:1px}
+.review-card{
+  border:2px solid #c9b88a;background:#faf6ed;
+  padding:16px;box-shadow:3px 3px 0 #c9b88a;margin:12px 0;
+}
+.review-body{font-size:12px;line-height:1.8;color:#6d5843;white-space:pre-wrap}
+.review-empty{font-size:11px;color:#a89070;text-align:center;padding:40px 0}
 </style>
 </head>
 <body>
@@ -522,6 +535,39 @@ function GachaPage({ balance, rewards, onPlay, loading }) {
   );
 }
 
+function ReviewPage() {
+  const [review, setReview] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    (async () => {
+      setLoading(true);
+      try {
+        const data = await api("reviews");
+        if (data && data.length > 0) setReview(data[0]);
+      } catch (e) {}
+      setLoading(false);
+    })();
+  }, []);
+
+  if (loading) return h("div", { className: "page" }, h("div", { className: "loading" }, "Loading..."));
+
+  return h("div", { className: "page review-page" },
+    h("div", { className: "review-header" },
+      h("div", { className: "review-icon" }, "◇"),
+      h("div", { className: "review-title" }, "LORI'S REVIEW")
+    ),
+    review ? h("div", null,
+      h("div", { className: "review-date" },
+        review.week_start + " → " + review.week_end
+      ),
+      h("div", { className: "review-card" },
+        h("div", { className: "review-body" }, review.lux_comment || "（还没写）")
+      )
+    ) : h("div", { className: "review-empty" }, "还没有 review")
+  );
+}
+
 function App() {
   const [connected, setConnected] = useState(!!getAPI());
   const [tab, setTab] = useState("home");
@@ -568,6 +614,7 @@ function App() {
     { id: "home", icon: "✦" },
     { id: "checklist", icon: "✓" },
     { id: "history", icon: "≡" },
+    { id: "review", icon: "◇" },
     { id: "gacha", icon: "◎" },
   ];
 
@@ -581,6 +628,9 @@ function App() {
       break;
     case "history":
       page = h(HistoryPage);
+      break;
+    case "review":
+      page = h(ReviewPage);
       break;
     case "gacha":
       page = h(GachaPage, {
