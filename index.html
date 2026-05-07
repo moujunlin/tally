@@ -68,6 +68,27 @@ body::before{
 }
 .connect-box input::placeholder{color:#c9b88a}
 
+/* ---- Weather Card ---- */
+.weather-card{
+  border:2px solid #c9b88a;background:#faf6ed;
+  padding:12px 14px;margin-bottom:16px;
+  box-shadow:3px 3px 0 #c9b88a;
+  display:flex;align-items:center;gap:12px;
+}
+.weather-icon{font-size:24px;flex-shrink:0}
+.weather-info{flex:1;min-width:0}
+.weather-city-row{display:flex;align-items:center;gap:6px;margin-bottom:2px}
+.weather-city{font-size:11px;letter-spacing:2px;color:#6d5843;cursor:pointer;border-bottom:1px dashed #c9b88a}
+.weather-city:hover{border-color:#b8960c}
+.weather-city-input{
+  width:80px;padding:2px 6px;border:1px solid #b8960c;
+  background:#f5f0e6;font-family:inherit;font-size:11px;
+  color:#6d5843;outline:none;
+}
+.weather-temp{font-size:22px;color:#b8960c;line-height:1}
+.weather-desc{font-size:10px;color:#a89070;margin-top:2px}
+.weather-details{font-size:9px;color:#a89070;letter-spacing:1px}
+
 /* ---- Home ---- */
 .dash-page{padding-bottom:80px}
 .dash-header{text-align:center;margin-bottom:20px}
@@ -241,7 +262,57 @@ function ConnectPage({ onConnect }) {
   );
 }
 
-function HomePage({ balance, todayData, coinHistory }) {
+function weatherIcon(desc) {
+  if (!desc) return "◌";
+  if (desc.includes("晴")) return "☀";
+  if (desc.includes("云") || desc.includes("阴")) return "☁";
+  if (desc.includes("雨")) return "☂";
+  if (desc.includes("雪")) return "❄";
+  if (desc.includes("雾") || desc.includes("霾")) return "◌";
+  return "◈";
+}
+
+function WeatherCard({ weather, onCityChange }) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+
+  if (!weather || weather.error) return null;
+
+  const startEdit = () => { setDraft(weather.city || ""); setEditing(true); };
+  const confirmEdit = async () => {
+    if (draft.trim() && draft.trim() !== weather.city) {
+      await onCityChange(draft.trim());
+    }
+    setEditing(false);
+  };
+
+  return h("div", { className: "weather-card" },
+    h("div", { className: "weather-icon" }, weatherIcon(weather.desc)),
+    h("div", { className: "weather-info" },
+      h("div", { className: "weather-city-row" },
+        editing
+          ? h("input", {
+              className: "weather-city-input",
+              value: draft,
+              onChange: e => setDraft(e.target.value),
+              onKeyDown: e => e.key === "Enter" && confirmEdit(),
+              onBlur: confirmEdit,
+              autoFocus: true,
+            })
+          : h("span", { className: "weather-city", onClick: startEdit }, weather.city || "未设置")
+      ),
+      h("div", { style: { display: "flex", alignItems: "baseline", gap: "8px" } },
+        h("span", { className: "weather-temp" }, weather.temp_c + "°"),
+        h("span", { className: "weather-desc" }, weather.desc)
+      ),
+      h("div", { className: "weather-details" },
+        "体感 " + weather.feels_like_c + "° · 湿度 " + weather.humidity + "% · 风 " + weather.wind_kmph + "km/h"
+      )
+    )
+  );
+}
+
+function HomePage({ balance, todayData, coinHistory, weather, onCityChange }) {
   const items = todayData?.items || [];
   const checkedCount = items.filter(i => i.checked).length;
   const totalCount = items.length;
@@ -257,6 +328,7 @@ function HomePage({ balance, todayData, coinHistory }) {
         h("span", { className: "dash-coin-label" }, " ✦")
       )
     ),
+    h(WeatherCard, { weather, onCityChange }),
     h("div", { className: "section-label" }, "TODAY'S PROGRESS"),
     h("div", { className: "dash-pct" }, pct + "%"),
     h("div", { className: "dash-progress-bg" },
@@ -576,6 +648,7 @@ function App() {
   const [coinHistory, setCoinHistory] = useState([]);
   const [rewards, setRewards] = useState([]);
   const [loadingRv, setLoadingRv] = useState(false);
+  const [weather, setWeather] = useState(null);
 
   const loadSettings = useCallback(async () => {
     if (!getAPI()) return;
@@ -597,13 +670,25 @@ function App() {
     setLoadingRv(false);
   }, []);
 
+  const loadWeather = useCallback(async () => {
+    if (!getAPI()) return;
+    try { setWeather(await api("weather")); } catch (e) {}
+  }, []);
+
+  const changeCity = useCallback(async (city) => {
+    try {
+      await api("city", { method: "PATCH", body: { city } });
+      await loadWeather();
+    } catch (e) {}
+  }, []);
+
   useEffect(() => {
-    if (connected) { loadSettings(); loadToday(); }
+    if (connected) { loadSettings(); loadToday(); loadWeather(); }
   }, [connected]);
 
   useEffect(() => {
     if (!connected) return;
-    if (tab === "home") { loadSettings(); loadToday(); loadHistory(); }
+    if (tab === "home") { loadSettings(); loadToday(); loadHistory(); loadWeather(); }
     if (tab === "checklist") { loadToday(); }
     if (tab === "gacha") { loadRewards(); loadSettings(); }
   }, [tab]);
@@ -621,7 +706,7 @@ function App() {
   let page = null;
   switch (tab) {
     case "home":
-      page = h(HomePage, { balance, todayData, coinHistory });
+      page = h(HomePage, { balance, todayData, coinHistory, weather, onCityChange: changeCity });
       break;
     case "checklist":
       page = h(ChecklistPage, { onUpdate: () => { loadSettings(); } });
