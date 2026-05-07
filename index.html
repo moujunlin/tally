@@ -677,9 +677,12 @@ function App() {
 
   const changeCity = useCallback(async (city) => {
     try {
-      await api("city", { method: "PATCH", body: { city } });
-      await loadWeather();
-    } catch (e) {}
+      const res = await api("city", { method: "PATCH", body: { city } });
+      if (res?.weather) setWeather(res.weather);
+      else await loadWeather();
+    } catch (e) {
+      alert("城市无法识别，保持原城市");
+    }
   }, []);
 
   useEffect(() => {

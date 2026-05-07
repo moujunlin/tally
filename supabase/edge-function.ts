@@ -419,15 +419,40 @@ Deno.serve(async (req) => {
       if (req.method === "PATCH") {
         const body = await req.json();
         if (!body.city) return json({ error: "city required" }, 400);
+        const city = body.city.trim();
+        const encoded = encodeURIComponent(city);
+        let fresh: any = null;
+        try {
+          const res = await fetch(`https://wttr.in/${encoded}?format=j1`, {
+            headers: { "Accept-Language": "zh" },
+            signal: AbortSignal.timeout(5000),
+          });
+          if (res.ok) {
+            const w = await res.json();
+            const cur = w?.current_condition?.[0];
+            if (cur) {
+              fresh = {
+                city,
+                temp_c: cur.temp_C,
+                feels_like_c: cur.FeelsLikeC,
+                humidity: cur.humidity,
+                desc: cur.lang_zh?.[0]?.value || cur.weatherDesc?.[0]?.value || "",
+                wind_kmph: cur.windspeedKmph,
+                fetched_at: new Date().toISOString(),
+              };
+            }
+          }
+        } catch {}
+        if (!fresh) {
+          return json({ error: "城市无法识别", city_rejected: city }, 400);
+        }
         await db
           .from("system_config")
-          .upsert({ key: "current_city", value: body.city }, { onConflict: "key" });
-        // invalidate weather cache
+          .upsert({ key: "current_city", value: city }, { onConflict: "key" });
         await db
           .from("system_config")
-          .delete()
-          .eq("key", "weather_cache");
-        return json({ city: body.city, weather_cache: "invalidated" });
+          .upsert({ key: "weather_cache", value: JSON.stringify(fresh) }, { onConflict: "key" });
+        return json({ city, weather: fresh });
       }
     }
 
